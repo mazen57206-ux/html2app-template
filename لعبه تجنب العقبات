@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Endless Runner محسّن</title>
+<style>
+body {margin:0; overflow:hidden; background:#111;}
+canvas {display:block; margin:auto; background:#222;}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let player, obstacles, score, gameOver, gravity, gameLoopId;
+
+function initGame() {
+  player = {x:50, y:canvas.height-120, width:30, height:80, vy:0, jumping:false};
+  obstacles = [];
+  score = 0;
+  gameOver = false;
+  gravity = 1;
+  if(gameLoopId) cancelAnimationFrame(gameLoopId);
+  loop();
+}
+
+function spawnObstacle(){
+  if(gameOver) return;
+  let w = 30, h = 50;
+  obstacles.push({x:canvas.width, y:canvas.height-100, width:w, height:h, speed:5});
+}
+setInterval(spawnObstacle, 1500);
+
+function jump(){ 
+  if(!player.jumping){player.vy=-15; player.jumping=true;} 
+}
+canvas.addEventListener('touchstart', jump);
+canvas.addEventListener('mousedown', jump);
+
+function update(){
+  if(gameOver) return;
+  player.vy += gravity;
+  player.y += player.vy;
+  if(player.y >= canvas.height-120){player.y = canvas.height-120; player.jumping=false; player.vy=0;}
+
+  obstacles.forEach(o => {
+    o.x -= o.speed;
+    if(player.x < o.x + o.width && player.x + player.width > o.x &&
+       player.y < o.y + o.height && player.y + player.height > o.y){
+      gameOver = true;
+    }
+  });
+  obstacles = obstacles.filter(o => o.x + o.width > 0);
+  score++;
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // اللاعب مستطيل عصا
+  ctx.fillStyle = 'cyan';
+  ctx.fillRect(player.x, player.y, player.width, player.height);
+
+  // العقبات
+  ctx.fillStyle = 'red';
+  obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
+
+  // النقاط
+  ctx.fillStyle = 'white';
+  ctx.font = '32px Arial';
+  ctx.fillText('Score: '+Math.floor(score), 20, 40);
+
+  if(gameOver){
+    ctx.fillStyle = 'yellow';
+    ctx.font = '60px Arial';
+    ctx.fillText('Game Over', canvas.width/2-150, canvas.height/2-50);
+    ctx.font = '40px Arial';
+    ctx.fillText('اضغط الشاشة للعب مجددًا', canvas.width/2-180, canvas.height/2+20);
+  }
+}
+
+canvas.addEventListener('touchstart', () => { if(gameOver) initGame(); });
+canvas.addEventListener('mousedown', () => { if(gameOver) initGame(); });
+
+function loop(){
+  update();
+  draw();
+  gameLoopId = requestAnimationFrame(loop);
+}
+
+initGame();
+</script>
+</body>
+</html>
